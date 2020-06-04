@@ -2,15 +2,17 @@
 # https://github.com/openresty/docker-openresty
 
 ARG RESTY_IMAGE_BASE="alpine"
-ARG RESTY_IMAGE_TAG="3.11"
+ARG RESTY_IMAGE_TAG="latest"
 
 FROM ${RESTY_IMAGE_BASE}:${RESTY_IMAGE_TAG}
 
 LABEL maintainer="Evan Wies <evan@neomantra.net>"
 
+ENV NGX_BROTLI_COMMIT 25f86f0bac1101b6512135eac5f93c49c63609e3
+
 # Docker Build Arguments
 ARG RESTY_IMAGE_BASE="alpine"
-ARG RESTY_IMAGE_TAG="3.11"
+ARG RESTY_IMAGE_TAG="latest"
 ARG RESTY_VERSION="1.15.8.3"
 ARG RESTY_OPENSSL_VERSION="1.1.1g"
 ARG RESTY_OPENSSL_PATCH_VERSION="1.1.1f"
@@ -47,6 +49,7 @@ ARG RESTY_CONFIG_OPTIONS="\
     --with-stream \
     --with-stream_ssl_module \
     --with-threads \
+    --add-module=/usr/src/ngx_brotli \
     "
 ARG RESTY_CONFIG_OPTIONS_MORE=""
 ARG RESTY_LUAJIT_OPTIONS="--with-luajit-xcflags='-DLUAJIT_NUMMODE=2 -DLUAJIT_ENABLE_LUA52COMPAT'"
@@ -98,6 +101,18 @@ RUN apk add --no-cache --virtual .build-deps \
         libxslt \
         zlib \
         ${RESTY_ADD_PACKAGE_RUNDEPS} \
+    && apk add --no-cache --virtual .brotli-build-deps \
+        autoconf \
+        libtool \
+        automake \
+        git \
+        g++ \
+        cmake \
+    && mkdir -p /usr/src \
+    && cd /usr/src \
+    && git clone --recursive https://github.com/google/ngx_brotli.git \
+    && cd ngx_brotli \
+    && git checkout -b $NGX_BROTLI_COMMIT $NGX_BROTLI_COMMIT \
     && cd /tmp \
     && if [ -n "${RESTY_EVAL_PRE_CONFIGURE}" ]; then eval $(echo ${RESTY_EVAL_PRE_CONFIGURE}); fi \
     && cd /tmp \
